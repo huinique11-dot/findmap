@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>우리동네 배움지도</title>
+<meta name="description" content="학교 주변 지역 교육자원을 찾아 지역연계 교육과정을 계획하는 지도">
+<meta name="theme-color" content="#1f6f5c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <img src="icon.svg" alt="" width="28" height="28">
+    <h1>우리동네 배움지도</h1>
+  </div>
+  <label class="school-pick">
+    <span class="sr">우리 학교 선택</span>
+    <input id="schoolInput" list="schoolList" placeholder="🏫 우리 학교 이름을 입력하세요" autocomplete="off">
+    <datalist id="schoolList"></datalist>
+  </label>
+  <button class="icon-btn" id="helpBtn" title="사용법" aria-label="사용법">?</button>
+</header>
+
+<main class="layout">
+  <section class="panel" id="panel">
+    <div class="handle" id="handle" aria-hidden="true"></div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="find" class="on">🔎 찾기</button>
+      <button role="tab" data-tab="plan">📋 수업계획 <b id="planCount" class="badge">0</b></button>
+      <button role="tab" data-tab="data">➕ 자료추가</button>
+    </nav>
+
+    <div class="tab on" id="tab-find">
+      <div class="filters">
+        <input id="q" type="search" placeholder="이름·주소·분류 검색">
+        <div class="row">
+          <select id="gu" aria-label="지역">
+            <option value="">전체 지역</option>
+          </select>
+          <select id="radius" aria-label="거리">
+            <option value="0">거리 제한 없음</option>
+            <option value="1">1km 이내</option>
+            <option value="2">2km 이내</option>
+            <option value="3" selected>3km 이내</option>
+            <option value="5">5km 이내</option>
+          </select>
+        </div>
+        <div class="chips" id="chips"></div>
+      </div>
+      <p class="summary" id="summary"></p>
+      <ul class="list" id="list"></ul>
+    </div>
+
+    <div class="tab" id="tab-plan">
+      <div class="plan-head">
+        <input id="planTitle" placeholder="수업 제목 (예: 4학년 사회 - 우리 고장의 공공기관)">
+        <div class="row">
+          <button id="exportCsv">엑셀 저장</button>
+          <button id="printPlan">인쇄</button>
+          <button id="clearPlan" class="ghost">비우기</button>
+        </div>
+      </div>
+      <ol class="plan" id="plan"></ol>
+      <p class="empty" id="planEmpty">찾기 탭에서 <b>☆ 담기</b>를 눌러 수업에 활용할 장소를 모아 보세요.</p>
+    </div>
+
+    <div class="tab" id="tab-data">
+      <div class="card">
+        <h3>엑셀로 한 번에 추가</h3>
+        <p>열 순서: <code>이름 · 내용(분류) · 주소 · 전화번호 · 위도 · 경도</code><br>위도·경도는 비워 두면 주소로 자동 찾습니다.</p>
+        <div class="row">
+          <label class="btn">파일 선택<input type="file" id="xlsx" accept=".xlsx,.xls,.csv" hidden></label>
+          <button id="tmplBtn" class="ghost">빈 양식 받기</button>
+        </div>
+        <p class="progress" id="progress"></p>
+      </div>
+      <div class="card">
+        <h3>지도에서 직접 추가</h3>
+        <p>아래 버튼을 누른 뒤 지도에서 위치를 누르세요.</p>
+        <button id="pickBtn">📍 지도에서 위치 고르기</button>
+      </div>
+      <div class="card">
+        <h3>내가 추가한 장소 <span id="customCount"></span></h3>
+        <ul class="mini" id="customList"></ul>
+        <button id="clearCustom" class="ghost">내가 추가한 장소 모두 삭제</button>
+      </div>
+      <p class="note">추가한 자료와 수업계획은 이 기기의 브라우저에만 저장됩니다.</p>
+    </div>
+  </section>
+
+  <section class="map-wrap">
+    <div id="map" aria-label="지도"></div>
+    <button class="fab" id="locBtn" title="내 위치" aria-label="내 위치">◎</button>
+  </section>
+</main>
+
+<dialog id="help">
+  <h2>3단계로 끝나는 사용법</h2>
+  <ol>
+    <li><b>우리 학교 선택</b> — 위쪽 칸에 학교 이름을 입력하면 학교 주변이 지도에 표시됩니다.</li>
+    <li><b>장소 찾기</b> — 분류 버튼과 거리로 걸러 보고, 목록이나 지도의 점을 눌러 정보를 확인합니다.</li>
+    <li><b>수업에 담기</b> — <b>☆ 담기</b>를 누르면 <b>수업계획</b> 탭에 모입니다. 활동 내용을 적고 엑셀로 저장하거나 인쇄하세요.</li>
+  </ol>
+  <p>새 기관은 <b>자료추가</b> 탭에서 엑셀 파일을 올리거나 지도를 눌러 넣을 수 있습니다. 별도 설치나 로그인 없이 PC·스마트폰 모두에서 쓸 수 있어요.</p>
+  <form method="dialog"><button>시작하기</button></form>
+</dialog>
+
+<dialog id="addDlg">
+  <form method="dialog" id="addForm">
+    <h2>장소 추가</h2>
+    <label>이름<input name="name" required></label>
+    <label>분류<input name="cat" list="catList" required placeholder="예: 체험시설"></label>
+    <datalist id="catList"></datalist>
+    <label>주소<input name="addr"></label>
+    <label>전화번호<input name="tel" inputmode="tel"></label>
+    <div class="row">
+      <button value="cancel" class="ghost" formnovalidate>취소</button>
+      <button value="ok">추가</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="printArea"></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="data/places.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
